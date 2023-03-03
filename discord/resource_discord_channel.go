@@ -213,6 +213,7 @@ func resourceChannelRead(ctx context.Context, d *schema.ResourceData, m interfac
 		return diag.Errorf("Invalid channel type: %d", channel.Type)
 	}
 
+	d.Set("server_id", channel.GuildID.String())
 	d.Set("type", channelType)
 	d.Set("name", channel.Name)
 	d.Set("position", channel.Position)
