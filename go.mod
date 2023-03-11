@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/andersfylling/disgord v0.35.1
 	github.com/andersfylling/snowflake/v5 v5.0.1
-	github.com/bwmarrin/discordgo v0.27.0
+	github.com/bwmarrin/discordgo v0.27.1
 	github.com/hashicorp/go-cty v1.4.1-0.20200723130312-85980079f637
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.25.0
 	github.com/polds/imgbase64 v0.0.0-20140820003345-cb7bf37298b7
