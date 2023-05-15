@@ -3,7 +3,7 @@ module github.com/lucky3028/discord-terraform
 go 1.20
 
 require (
-	github.com/andersfylling/disgord v0.35.1
+	github.com/andersfylling/disgord v0.36.2
 	github.com/andersfylling/snowflake/v5 v5.0.1
 	github.com/bwmarrin/discordgo v0.27.1
 	github.com/hashicorp/go-cty v1.4.1-0.20200723130312-85980079f637
