@@ -2,7 +2,7 @@ module github.com/lucky3028/discord-terraform
 
 go 1.21
 
-toolchain go1.22.0
+toolchain go1.22.2
 
 require (
 	github.com/andersfylling/disgord v0.35.1
