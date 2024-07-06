@@ -2,7 +2,7 @@ module github.com/lucky3028/discord-terraform
 
 go 1.21
 
-toolchain go1.22.4
+toolchain go1.22.5
 
 require (
 	github.com/bwmarrin/discordgo v0.28.1
