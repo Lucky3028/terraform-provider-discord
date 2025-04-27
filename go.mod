@@ -6,7 +6,7 @@ toolchain go1.24.2
 
 require (
 	github.com/bwmarrin/discordgo v0.28.1
-	github.com/hashicorp/go-cty v1.4.1-0.20241127173709-a0325cb22c13
+	github.com/hashicorp/go-cty v1.4.1
 	github.com/hashicorp/terraform-plugin-docs v0.21.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.36.1
