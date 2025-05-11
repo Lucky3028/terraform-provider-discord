@@ -62,6 +62,9 @@ func dataSourceDiscordPermission() *schema.Resource {
 		"create_events":               0x100000000000,
 		"use_external_sounds":         0x200000000000,
 		"send_voice_messages":         0x400000000000,
+		"set_voice_channel_status":    0x1000000000000,
+		"send_polls":                  0x2000000000000,
+		"use_external_apps":           0x4000000000000,
 	}
 
 	schemaMap := make(map[string]*schema.Schema)
