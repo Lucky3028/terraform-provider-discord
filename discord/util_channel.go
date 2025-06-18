@@ -18,6 +18,8 @@ func getTextChannelType(channelType discordgo.ChannelType) (string, bool) {
 		return "news", true
 	case 6:
 		return "store", true
+	case 15:
+		return "forum", true
 	}
 
 	return "text", false
@@ -35,6 +37,8 @@ func getDiscordChannelType(name string) (discordgo.ChannelType, bool) {
 		return discordgo.ChannelTypeGuildNews, true
 	case "store":
 		return discordgo.ChannelTypeGuildStore, true
+	case "forum":
+		return discordgo.ChannelTypeGuildForum, true
 	}
 
 	return 0, false
