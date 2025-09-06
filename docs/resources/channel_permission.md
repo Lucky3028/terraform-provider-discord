@@ -8,7 +8,7 @@ description: |-
 
 # discord_channel_permission (Resource)
 
-A resource to create a permission override for a channel.
+A resource to create a permission override for a channel.aaaa
 
 ## Example Usage
 
