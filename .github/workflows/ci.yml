@@ -47,10 +47,10 @@ jobs:
       - name: Check for documentation changes
         shell: bash
         run: |
-          if ! git diff --compact-summary --exit-code; then
+          if ! git diff --name-only --exit-code; then
             echo "DOCS_CHANGED=true" >> $GITHUB_ENV
             echo "DIFF_OUTPUT<<EOF" >> $GITHUB_ENV
-            git diff --compact-summary >> $GITHUB_ENV
+            git diff --name-only >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
           else
             echo "DOCS_CHANGED=false" >> $GITHUB_ENV
