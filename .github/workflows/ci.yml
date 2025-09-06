@@ -55,25 +55,26 @@ jobs:
           else
             echo "DOCS_CHANGED=false" >> $GITHUB_ENV
           fi
+      - name: Write comment body to file
+        if: env.DOCS_CHANGED == 'true' && github.event_name == 'pull_request'
+        run: |
+          cat > /tmp/comment.md << 'EOF'
+          ## Documentation Changes Detected
+
+          The following documentation changes were generated:
+
+          ```
+          ${{ env.DIFF_OUTPUT }}
+          ```
+
+          Please run `go generate ./...` and commit the changes.
+          EOF
       - name: Comment PR
         if: env.DOCS_CHANGED == 'true' && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `## Documentation Changes Detected
-
-The following documentation changes were generated:
-
-\`\`\`
-${{ env.DIFF_OUTPUT }}
-\`\`\`
-
-Please run \`go generate ./...\` and commit the changes.`
-            })
+        run: |
+          gh pr comment ${{ github.event.number }} --body-file /tmp/comment.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Fail if docs changed
         if: env.DOCS_CHANGED == 'true'
         run: |
