@@ -1,6 +1,7 @@
 name: CI
 permissions:
   contents: read
+  pull-requests: write
 on:
   push:
     branches:
@@ -26,6 +27,16 @@ jobs:
         run: go build -v ./...
       - name: Test
         run: go test -v ./...
+  docs:
+    name: Check for documentation changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          cache: true
+          go-version-file: go.mod
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -36,10 +47,36 @@ jobs:
       - name: Check for documentation changes
         shell: bash
         run: |
-          result=0
-          git diff --compact-summary --exit-code || result=$?
-          if [ ! "$result" -eq "0" ]; then
-            echo
-            echo "Unexpected difference in directories after code generation. Run 'go generate ./...' command and commit."
-            exit 1
+          if ! git diff --name-only --exit-code; then
+            echo "DOCS_CHANGED=true" >> $GITHUB_ENV
+            echo "DIFF_OUTPUT<<EOF" >> $GITHUB_ENV
+            git diff --name-only >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          else
+            echo "DOCS_CHANGED=false" >> $GITHUB_ENV
           fi
+      - name: Write comment body to file
+        if: env.DOCS_CHANGED == 'true' && github.event_name == 'pull_request'
+        run: |
+          cat > /tmp/comment.md << 'EOF'
+          ## Documentation Changes Detected
+
+          The following documentation changes were generated:
+
+          ```
+          ${{ env.DIFF_OUTPUT }}
+          ```
+
+          Please run `go generate ./...` and commit the changes.
+          EOF
+      - name: Comment PR
+        if: env.DOCS_CHANGED == 'true' && github.event_name == 'pull_request'
+        run: |
+          gh pr comment ${{ github.event.number }} --body-file /tmp/comment.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Fail if docs changed
+        if: env.DOCS_CHANGED == 'true'
+        run: |
+          echo "Documentation changes detected. Run 'go generate ./...' command and commit."
+          exit 1
