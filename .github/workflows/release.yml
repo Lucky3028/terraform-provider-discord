@@ -9,6 +9,8 @@ on:
 jobs:
   goreleaser:
     name: Make a release on GitHub
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
