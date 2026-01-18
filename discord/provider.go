@@ -45,6 +45,7 @@ func Provider(version string) func() *schema.Provider {
 				"discord_message":            resourceDiscordMessage(),
 				"discord_system_channel":     resourceDiscordSystemChannel(),
 				"discord_webhook":            resourceDiscordWebhook(),
+				"discord_server_onboarding":  resourceDiscordServerOnboarding(),
 			},
 
 			DataSourcesMap: map[string]*schema.Resource{
