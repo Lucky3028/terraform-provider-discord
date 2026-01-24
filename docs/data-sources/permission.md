@@ -58,6 +58,7 @@ resource "discord_channel_permission" "general_mod" {
 - `allow_extends` (Number) The base permission bits for allow to extend.
 - `attach_files` (String) The value to set for the `attach_files` permission bit. Must be `allow`, `unset`, or `deny`. (default `unset`)
 - `ban_members` (String) The value to set for the `ban_members` permission bit. Must be `allow`, `unset`, or `deny`. (default `unset`)
+- `bypass_slowmode` (String) The value to set for the `bypass_slowmode` permission bit. Must be `allow`, `unset`, or `deny`. (default `unset`)
 - `change_nickname` (String) The value to set for the `change_nickname` permission bit. Must be `allow`, `unset`, or `deny`. (default `unset`)
 - `connect` (String) The value to set for the `connect` permission bit. Must be `allow`, `unset`, or `deny`. (default `unset`)
 - `create_events` (String) The value to set for the `create_events` permission bit. Must be `allow`, `unset`, or `deny`. (default `unset`)
@@ -82,6 +83,7 @@ resource "discord_channel_permission" "general_mod" {
 - `moderate_members` (String) The value to set for the `moderate_members` permission bit. Must be `allow`, `unset`, or `deny`. (default `unset`)
 - `move_members` (String) The value to set for the `move_members` permission bit. Must be `allow`, `unset`, or `deny`. (default `unset`)
 - `mute_members` (String) The value to set for the `mute_members` permission bit. Must be `allow`, `unset`, or `deny`. (default `unset`)
+- `pin_messages` (String) The value to set for the `pin_messages` permission bit. Must be `allow`, `unset`, or `deny`. (default `unset`)
 - `priority_speaker` (String) The value to set for the `priority_speaker` permission bit. Must be `allow`, `unset`, or `deny`. (default `unset`)
 - `read_message_history` (String) The value to set for the `read_message_history` permission bit. Must be `allow`, `unset`, or `deny`. (default `unset`)
 - `request_to_speak` (String) The value to set for the `request_to_speak` permission bit. Must be `allow`, `unset`, or `deny`. (default `unset`)
