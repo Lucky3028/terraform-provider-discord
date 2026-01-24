@@ -23,6 +23,7 @@ Check [the GitHubActions file](./.github/workflows/release.yml).
 * discord_role_everyone
 * discord_server
 * discord_managed_server
+* discord_server_onboarding
 * discord_text_channel
 * discord_voice_channel
 * discord_news_channel
