@@ -38,3 +38,13 @@ resource "discord_channel_permission" "chatting" {
 ### Read-Only
 
 - `id` (String) Hash of the channel ID, override ID, and type.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+terraform import discord_channel_permission.example "<channel id>:<override id>:<role|user>"
+```
