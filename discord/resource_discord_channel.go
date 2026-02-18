@@ -186,6 +186,7 @@ func resourceChannelCreate(ctx context.Context, d *schema.ResourceData, m interf
 		Topic:     topic,
 		Bitrate:   bitrate,
 		UserLimit: userlimit,
+		Position:  d.Get("position").(int),
 		ParentID:  parentId,
 		NSFW:      nsfw,
 	}, discordgo.WithContext(ctx))
