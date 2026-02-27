@@ -19,8 +19,9 @@ resource "discord_text_channel" "system" {
 }
 
 resource "discord_system_channel" "system" {
-  server_id         = discord_text_channel.system.server_id
-  system_channel_id = discord_text_channel.system.id
+  server_id            = discord_text_channel.system.server_id
+  system_channel_id    = discord_text_channel.system.id
+  system_channel_flags = 6 # Suppress premium subscriptions (2) + server setup tips (4)
 }
 ```
 
@@ -31,6 +32,10 @@ resource "discord_system_channel" "system" {
 
 - `server_id` (String) The ID of the server to manage the system channel for.
 - `system_channel_id` (String) The ID of the channel that will be used as the system channel.
+
+### Optional
+
+- `system_channel_flags` (Number) System channel flags. Bitwise OR of: suppress member join notifications (`1`), suppress premium subscriptions (`2`), suppress server setup tips (`4`), suppress join notification sticker replies (`8`).
 
 ### Read-Only
 

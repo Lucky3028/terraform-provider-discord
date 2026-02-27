@@ -24,6 +24,7 @@ func TestAccDatasourceDiscordSystemChannel(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(name, "server_id", testServerID),
 					resource.TestCheckResourceAttrSet(name, "system_channel_id"),
+					resource.TestCheckResourceAttrSet(name, "system_channel_flags"),
 				),
 			},
 		},

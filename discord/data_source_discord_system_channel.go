@@ -23,6 +23,11 @@ func dataSourceDiscordSystemChannel() *schema.Resource {
 				Computed:    true,
 				Description: "The ID of the server's system channel.",
 			},
+			"system_channel_flags": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "The system channel flags of the server.",
+			},
 			"id": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -44,6 +49,7 @@ func dataSourceDiscordSystemChannelRead(ctx context.Context, d *schema.ResourceD
 	} else {
 		d.SetId(serverId)
 		d.Set("system_channel_id", server.SystemChannelID)
+		d.Set("system_channel_flags", int(server.SystemChannelFlags))
 
 		return diags
 	}
