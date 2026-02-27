@@ -33,6 +33,11 @@ func TestAccResourceDiscordSystemChannel(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "system_channel_flags", "3"),
 				),
 			},
+			{
+				ResourceName:      name,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }

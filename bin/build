@@ -5,7 +5,7 @@ set -euxo pipefail
 go build -o terraform-provider-discord
 
 PROVIDER_NAME="discord"
-PROVIDER_VERSION="1.0.0"
+PROVIDER_VERSION="${1:-1.0.0}"
 RPOVIDER_REPO="registry.terraform.io/Lucky3028"
 OS_ARCH="$(go env GOHOSTOS)_$(go env GOHOSTARCH)"
 PROVIDER_PATH="$HOME/.terraform.d/plugins/$RPOVIDER_REPO/$PROVIDER_NAME/$PROVIDER_VERSION/$OS_ARCH/terraform-provider-discord"

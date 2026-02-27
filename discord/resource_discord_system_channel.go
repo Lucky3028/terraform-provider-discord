@@ -97,6 +97,7 @@ func resourceSystemChannelRead(ctx context.Context, d *schema.ResourceData, m in
 		return diag.Errorf("Error fetching server: %s", err.Error())
 	}
 
+	d.Set("server_id", serverId)
 	d.Set("system_channel_id", server.SystemChannelID)
 	d.Set("system_channel_flags", int(server.SystemChannelFlags))
 
