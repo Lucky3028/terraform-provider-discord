@@ -22,4 +22,5 @@ Fetches a server's system channel.
 ### Read-Only
 
 - `id` (String) The ID of the server.
+- `system_channel_flags` (Number) The system channel flags of the server.
 - `system_channel_id` (String) The ID of the server's system channel.
