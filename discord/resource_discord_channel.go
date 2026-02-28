@@ -238,13 +238,11 @@ func resourceChannelRead(ctx context.Context, d *schema.ResourceData, m interfac
 	d.Set("position", channel.Position)
 
 	switch channelType {
-	case "text":
+	case "text", "news":
 		{
 			d.Set("topic", channel.Topic)
 			d.Set("nsfw", channel.NSFW)
 		}
-	case "news":
-		d.Set("topic", channel.Topic)
 	case "voice":
 		{
 			d.Set("bitrate", channel.Bitrate)

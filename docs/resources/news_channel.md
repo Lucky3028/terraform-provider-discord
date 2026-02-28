@@ -31,6 +31,7 @@ resource "discord_news_channel" "general" {
 ### Optional
 
 - `category` (String) ID of category to place this channel in.
+- `nsfw` (Boolean) Whether the channel is NSFW.
 - `position` (Number) Position of the channel, `0`-indexed.
 - `sync_perms_with_category` (Boolean) Whether channel permissions should be synced with the category this channel is in.
 - `topic` (String) Topic of the channel.

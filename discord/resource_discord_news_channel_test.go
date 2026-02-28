@@ -27,6 +27,7 @@ func TestAccResourceDiscordNewsChannel(t *testing.T) {
 					resource.TestCheckResourceAttr(name, "position", "1"),
 					resource.TestCheckResourceAttrSet(name, "channel_id"),
 					resource.TestCheckResourceAttr(name, "topic", "Testing news channel"),
+					resource.TestCheckResourceAttr(name, "nsfw", "false"),
 					resource.TestCheckResourceAttr(name, "sync_perms_with_category", "false"),
 				),
 			},
@@ -41,6 +42,7 @@ func testAccResourceDiscordNewsChannel(serverID string) string {
       name = "terraform-news-channel"
       position = 1
       topic = "Testing news channel"
+      nsfw = false
       sync_perms_with_category = false
 	}`, serverID)
 }

@@ -20,6 +20,12 @@ func resourceDiscordNewsChannel() *schema.Resource {
 				Optional:    true,
 				Description: "Topic of the channel.",
 			},
+			"nsfw": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Whether the channel is NSFW.",
+			},
 		}),
 	}
 }
