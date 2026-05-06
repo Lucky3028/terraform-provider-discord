@@ -65,6 +65,11 @@ func dataSourceDiscordServer() *schema.Resource {
 				Computed:    true,
 				Description: "The hash of the server splash.",
 			},
+			"description": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The description of the server.",
+			},
 			"afk_channel_id": {
 				Type:        schema.TypeInt,
 				Computed:    true,
@@ -168,6 +173,7 @@ func dataSourceDiscordServerRead(ctx context.Context, d *schema.ResourceData, m 
 	d.Set("afk_timeout", server.AfkTimeout)
 	d.Set("icon_hash", server.Icon)
 	d.Set("splash_hash", server.Splash)
+	d.Set("description", server.Description)
 	d.Set("default_message_notifications", int(server.DefaultMessageNotifications))
 	d.Set("verification_level", int(server.VerificationLevel))
 	d.Set("explicit_content_filter", int(server.ExplicitContentFilter))

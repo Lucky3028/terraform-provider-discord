@@ -103,6 +103,11 @@ func baseServerSchema() map[string]*schema.Schema {
 			Computed:    true,
 			Description: "Hash of the splash.",
 		},
+		"description": {
+			Type:        schema.TypeString,
+			Optional:    true,
+			Description: "Description of the server.",
+		},
 		"owner_id": {
 			Type:        schema.TypeString,
 			Optional:    true,
@@ -273,6 +278,7 @@ func resourceServerCreate(ctx context.Context, d *schema.ResourceData, m interfa
 	server, err = client.GuildEdit(server.ID, &discordgo.GuildParams{
 		Icon:                        icon,
 		Region:                      d.Get("region").(string),
+		Description:                 d.Get("description").(string),
 		VerificationLevel:           &verificationLevel,
 		DefaultMessageNotifications: d.Get("default_message_notifications").(int),
 		ExplicitContentFilter:       d.Get("explicit_content_filter").(int),
@@ -361,6 +367,7 @@ func resourceServerRead(ctx context.Context, d *schema.ResourceData, m interface
 	d.Set("afk_timeout", server.AfkTimeout)
 	d.Set("icon_hash", server.Icon)
 	d.Set("splash_hash", server.Splash)
+	d.Set("description", server.Description)
 	d.Set("verification_level", server.VerificationLevel)
 	d.Set("default_message_notifications", server.DefaultMessageNotifications)
 	d.Set("explicit_content_filter", server.ExplicitContentFilter)
@@ -415,6 +422,10 @@ func resourceServerUpdate(ctx context.Context, d *schema.ResourceData, m interfa
 	}
 	if d.HasChange("splash_data_uri") {
 		guildParams.Splash = d.Get("splash_data_uri").(string)
+		edit = true
+	}
+	if d.HasChange("description") {
+		guildParams.Description = d.Get("description").(string)
 		edit = true
 	}
 	if d.HasChange("afk_channel_id") {

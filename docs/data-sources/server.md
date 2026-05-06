@@ -35,6 +35,7 @@ output "discord_api_region" {
 - `afk_channel_id` (Number) The AFK channel ID.
 - `afk_timeout` (Number) The AFK timeout of the server.
 - `default_message_notifications` (Number) The default message notification level of the server.
+- `description` (String) The description of the server.
 - `explicit_content_filter` (Number) The explicit content filter level of the server.
 - `icon_hash` (String) The hash of the server icon.
 - `id` (String) The ID of the server.
