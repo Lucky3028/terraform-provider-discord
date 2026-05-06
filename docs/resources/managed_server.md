@@ -30,6 +30,7 @@ resource "discord_managed_server" "my_server" {
 - `afk_channel_id` (String) ID of the channel AFK users will be moved to.
 - `afk_timeout` (Number) How many seconds before moving an AFK user.
 - `default_message_notifications` (Number) Default message notification settings. (`0` = all messages, `1` = mentions)
+- `description` (String) Description of the server.
 - `explicit_content_filter` (Number) Explicit content filter level of the server.
 - `icon_data_uri` (String) Data URI of an image to set the server icon to. Overrides `icon_url`.
 - `icon_url` (String) Remote URL to set the icon of the server to.
