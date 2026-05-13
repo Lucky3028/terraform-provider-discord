@@ -464,19 +464,6 @@ func resourceServerUpdate(ctx context.Context, d *schema.ResourceData, m interfa
 		edit = true
 	}
 
-	ownerId, hasOwner := d.GetOk("owner_id")
-	if d.HasChange("owner_id") {
-		if hasOwner {
-			guildParams.OwnerID = ownerId.(string)
-			edit = true
-		}
-	} else {
-		if hasOwner {
-			guildParams.OwnerID = server.OwnerID
-			edit = true
-		}
-	}
-
 	if edit {
 		if _, err = client.GuildEdit(server.ID, guildParams, discordgo.WithContext(ctx)); err != nil {
 			return diag.Errorf("Failed to edit server: %s", err.Error())
