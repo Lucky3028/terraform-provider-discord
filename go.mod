@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/terraform-plugin-log v0.10.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.40.1
 	github.com/polds/imgbase64 v0.0.0-20140820003345-cb7bf37298b7
-	golang.org/x/net v0.54.0
+	golang.org/x/net v0.55.0
 	gopkg.in/go-playground/colors.v1 v1.2.0
 )
 
@@ -77,7 +77,7 @@ require (
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
 	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.44.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	golang.org/x/tools v0.44.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
