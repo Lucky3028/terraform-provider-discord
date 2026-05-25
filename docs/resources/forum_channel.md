@@ -25,6 +25,7 @@ A resource to create a forum channel.
 - `category` (String) ID of category to place this channel in.
 - `nsfw` (Boolean) Whether the channel is NSFW.
 - `position` (Number) Position of the channel, `0`-indexed.
+- `rate_limit_per_user` (Number) Slowmode: minimum number of seconds a user has to wait between sending messages. `0` disables slowmode. Discord caps the value at `21600` (6 hours).
 - `sync_perms_with_category` (Boolean) Whether channel permissions should be synced with the category this channel is in.
 - `topic` (String) Topic of the channel.
 - `type` (String) The type of the channel. This is only for internal use and should never be provided.
