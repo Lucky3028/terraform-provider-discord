@@ -1,6 +1,10 @@
 package discord
 
 import (
+	"fmt"
+	"mime"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -39,10 +43,10 @@ func resourceDiscordMessage() *schema.Resource {
 				Description: "ID of the user who wrote the message.",
 			},
 			"content": {
-				AtLeastOneOf: []string{"content", "embed"},
+				AtLeastOneOf: []string{"content", "embed", "file"},
 				Type:         schema.TypeString,
 				Optional:     true,
-				Description:  "Text content of message. At least one of `content` or `embed` must be set.",
+				Description:  "Text content of message. At least one of `content`, `embed`, or `file` must be set.",
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return old == strings.TrimSuffix(new, "\r\n")
 				},
@@ -65,11 +69,11 @@ func resourceDiscordMessage() *schema.Resource {
 				Description: "Whether this message triggers TTS. (default `false`)",
 			},
 			"embed": {
-				AtLeastOneOf: []string{"content", "embed"},
+				AtLeastOneOf: []string{"content", "embed", "file"},
 				Type:         schema.TypeList,
 				Optional:     true,
 				MaxItems:     1,
-				Description:  "An embed block. At least one of `content` or `embed` must be set.",
+				Description:  "An embed block. At least one of `content`, `embed`, or `file` must be set.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"title": {
@@ -285,6 +289,58 @@ func resourceDiscordMessage() *schema.Resource {
 				Default:     false,
 				Description: "Whether this message is pinned. (default `false`)",
 			},
+			"file": {
+				AtLeastOneOf: []string{"content", "embed", "file"},
+				Type:         schema.TypeList,
+				Optional:     true,
+				ForceNew:     true,
+				MaxItems:     10,
+				Description:  "A local file to attach to the message. Up to 10 file blocks are supported (Discord's per-message attachment limit). Any change to a `file` block recreates the message — Discord does not allow editing existing attachments in place.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"source": {
+							Type:        schema.TypeString,
+							Required:    true,
+							ForceNew:    true,
+							Description: "Path to a local file to upload as an attachment.",
+						},
+						"filename": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Computed:    true,
+							ForceNew:    true,
+							Description: "Override the filename Discord stores for the attachment. Defaults to the basename of `source`.",
+						},
+						"content_type": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Computed:    true,
+							ForceNew:    true,
+							Description: "MIME type to send with the upload. Auto-detected from the file extension when omitted.",
+						},
+						"id": {
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "ID Discord assigned to the attachment.",
+						},
+						"url": {
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "CDN URL to the attachment.",
+						},
+						"proxy_url": {
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "URL to access the attachment via Discord's proxy.",
+						},
+						"size": {
+							Type:        schema.TypeInt,
+							Computed:    true,
+							Description: "Size of the attachment in bytes (as reported by Discord).",
+						},
+					},
+				},
+			},
 			"type": {
 				Type:        schema.TypeInt,
 				Computed:    true,
@@ -313,9 +369,17 @@ func resourceMessageCreate(ctx context.Context, d *schema.ResourceData, m interf
 			embeds = append(embeds, embed)
 		}
 	}
+
+	files, closers, err := buildMessageFiles(d.Get("file").([]interface{}))
+	if err != nil {
+		return diag.Errorf("Failed to create message in %s: %s", channelId, err.Error())
+	}
+	defer closeAll(closers)
+
 	message, err := client.ChannelMessageSendComplex(channelId, &discordgo.MessageSend{
 		Content: d.Get("content").(string),
 		Embeds:  embeds,
+		Files:   files,
 		TTS:     d.Get("tts").(bool),
 	}, discordgo.WithContext(ctx))
 	if err != nil {
@@ -331,6 +395,7 @@ func resourceMessageCreate(ctx context.Context, d *schema.ResourceData, m interf
 	} else {
 		d.Set("embed", nil)
 	}
+	d.Set("file", flattenMessageAttachments(d.Get("file").([]interface{}), message.Attachments))
 	if message.GuildID != "" {
 		d.Set("server_id", message.GuildID)
 	}
@@ -369,6 +434,7 @@ func resourceMessageRead(ctx context.Context, d *schema.ResourceData, m interfac
 	if len(message.Embeds) > 0 {
 		d.Set("embed", unbuildEmbed(message.Embeds[0]))
 	}
+	d.Set("file", flattenMessageAttachments(d.Get("file").([]interface{}), message.Attachments))
 	if message.EditedTimestamp != nil {
 		d.Set("edited_timestamp", message.EditedTimestamp.Format(time.RFC3339))
 	}
@@ -442,4 +508,87 @@ func resourceMessageDelete(ctx context.Context, d *schema.ResourceData, m interf
 	} else {
 		return diags
 	}
+}
+
+// buildMessageFiles opens each configured `file` block for upload. The returned
+// closers must be closed by the caller after the request has been sent.
+func buildMessageFiles(blocks []interface{}) ([]*discordgo.File, []*os.File, error) {
+	if len(blocks) == 0 {
+		return nil, nil, nil
+	}
+	files := make([]*discordgo.File, 0, len(blocks))
+	closers := make([]*os.File, 0, len(blocks))
+	for i, raw := range blocks {
+		block, ok := raw.(map[string]interface{})
+		if !ok {
+			return nil, closers, fmt.Errorf("file block %d is not a map", i)
+		}
+		source, _ := block["source"].(string)
+		if source == "" {
+			return nil, closers, fmt.Errorf("file block %d has empty `source`", i)
+		}
+		fh, err := os.Open(source)
+		if err != nil {
+			return nil, closers, fmt.Errorf("failed to open %s: %w", source, err)
+		}
+		closers = append(closers, fh)
+
+		name, _ := block["filename"].(string)
+		if name == "" {
+			name = filepath.Base(source)
+		}
+		ctype, _ := block["content_type"].(string)
+		if ctype == "" {
+			ctype = mime.TypeByExtension(filepath.Ext(name))
+		}
+		files = append(files, &discordgo.File{
+			Name:        name,
+			ContentType: ctype,
+			Reader:      fh,
+		})
+	}
+	return files, closers, nil
+}
+
+func closeAll(files []*os.File) {
+	for _, f := range files {
+		_ = f.Close()
+	}
+}
+
+// flattenMessageAttachments merges Discord's response (`attachments`) into the
+// list the user configured. Order follows the original config so the per-index
+// `source`/`filename`/`content_type` inputs are preserved; computed fields
+// (`id`, `url`, `proxy_url`, `size`) come from the API response.
+func flattenMessageAttachments(blocks []interface{}, attachments []*discordgo.MessageAttachment) []interface{} {
+	if len(blocks) == 0 && len(attachments) == 0 {
+		return nil
+	}
+	out := make([]interface{}, 0, len(blocks))
+	for i, raw := range blocks {
+		block, _ := raw.(map[string]interface{})
+		if block == nil {
+			block = map[string]interface{}{}
+		}
+		merged := map[string]interface{}{
+			"source":       block["source"],
+			"filename":     block["filename"],
+			"content_type": block["content_type"],
+		}
+		if i < len(attachments) && attachments[i] != nil {
+			a := attachments[i]
+			merged["id"] = a.ID
+			merged["url"] = a.URL
+			merged["proxy_url"] = a.ProxyURL
+			merged["size"] = a.Size
+			if merged["filename"] == "" {
+				merged["filename"] = a.Filename
+			}
+			if merged["content_type"] == "" {
+				merged["content_type"] = a.ContentType
+			}
+		}
+		out = append(out, merged)
+	}
+	return out
 }

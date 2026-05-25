@@ -55,9 +55,10 @@ resource "discord_message" "hello_world" {
 
 ### Optional
 
-- `content` (String) Text content of message. At least one of `content` or `embed` must be set.
+- `content` (String) Text content of message. At least one of `content`, `embed`, or `file` must be set.
 - `edited_timestamp` (String) When the message was edited.
-- `embed` (Block List, Max: 1) An embed block. At least one of `content` or `embed` must be set. (see [below for nested schema](#nestedblock--embed))
+- `embed` (Block List, Max: 1) An embed block. At least one of `content`, `embed`, or `file` must be set. (see [below for nested schema](#nestedblock--embed))
+- `file` (Block List, Max: 10) A local file to attach to the message. Up to 10 file blocks are supported (Discord's per-message attachment limit). Any change to a `file` block recreates the message — Discord does not allow editing existing attachments in place. (see [below for nested schema](#nestedblock--file))
 - `pinned` (Boolean) Whether this message is pinned. (default `false`)
 - `tts` (Boolean) Whether this message triggers TTS. (default `false`)
 
@@ -181,6 +182,26 @@ Optional:
 - `height` (Number) Height of the video.
 - `width` (Number) Width of the video.
 
+
+
+<a id="nestedblock--file"></a>
+### Nested Schema for `file`
+
+Required:
+
+- `source` (String) Path to a local file to upload as an attachment.
+
+Optional:
+
+- `content_type` (String) MIME type to send with the upload. Auto-detected from the file extension when omitted.
+- `filename` (String) Override the filename Discord stores for the attachment. Defaults to the basename of `source`.
+
+Read-Only:
+
+- `id` (String) ID Discord assigned to the attachment.
+- `proxy_url` (String) URL to access the attachment via Discord's proxy.
+- `size` (Number) Size of the attachment in bytes (as reported by Discord).
+- `url` (String) CDN URL to the attachment.
 
 
 
