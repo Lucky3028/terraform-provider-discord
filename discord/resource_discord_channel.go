@@ -50,10 +50,13 @@ func getChannelSchema(channelType string, s map[string]*schema.Schema) map[strin
 			Description: "Name of the channel.",
 		},
 		"position": {
-			Type:        schema.TypeInt,
-			Default:     1,
-			Optional:    true,
-			Description: "Position of the channel, `0`-indexed.",
+			Type:     schema.TypeInt,
+			Default:  1,
+			Optional: true,
+			Description: "Position of the channel, `0`-indexed. " +
+				"**Deprecated** — Discord normalises channel positions per-type within each category, which makes per-channel position values diverge from what you set in HCL and produces permanent state drift. " +
+				"Use `discord_channel_order` instead to manage ordering atomically via Discord's bulk reorder endpoint.",
+			Deprecated: "Use the discord_channel_order resource to manage channel ordering atomically. The per-channel position field cannot produce a stable plan on guilds with many channels.",
 			ValidateFunc: func(val interface{}, key string) (warns []string, errors []error) {
 				v := val.(int)
 

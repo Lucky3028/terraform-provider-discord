@@ -32,7 +32,7 @@ resource "discord_news_channel" "general" {
 
 - `category` (String) ID of category to place this channel in.
 - `nsfw` (Boolean) Whether the channel is NSFW.
-- `position` (Number) Position of the channel, `0`-indexed.
+- `position` (Number, Deprecated) Position of the channel, `0`-indexed. **Deprecated** — Discord normalises channel positions per-type within each category, which makes per-channel position values diverge from what you set in HCL and produces permanent state drift. Use `discord_channel_order` instead to manage ordering atomically via Discord's bulk reorder endpoint.
 - `sync_perms_with_category` (Boolean) Whether channel permissions should be synced with the category this channel is in.
 - `topic` (String) Topic of the channel.
 - `type` (String) The type of the channel. This is only for internal use and should never be provided.
