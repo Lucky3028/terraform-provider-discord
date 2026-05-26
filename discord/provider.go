@@ -40,6 +40,7 @@ func Provider(version string) func() *schema.Provider {
 				"discord_channel_permission":        resourceDiscordChannelPermission(),
 				"discord_invite":                    resourceDiscordInvite(),
 				"discord_role":                      resourceDiscordRole(),
+				"discord_role_positions":            resourceDiscordRolePositions(),
 				"discord_role_everyone":             resourceDiscordRoleEveryone(),
 				"discord_member_roles":              resourceDiscordMemberRoles(),
 				"discord_role_connection_metadata":  resourceDiscordRoleConnectionMetadata(),
