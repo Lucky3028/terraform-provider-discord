@@ -49,6 +49,7 @@ func Provider(version string) func() *schema.Provider {
 				"discord_webhook":                   resourceDiscordWebhook(),
 				"discord_server_onboarding":         resourceDiscordServerOnboarding(),
 				"discord_server_widget":             resourceDiscordServerWidget(),
+				"discord_auto_moderation_rule":      resourceDiscordAutoModerationRule(),
 			},
 
 			DataSourcesMap: map[string]*schema.Resource{
