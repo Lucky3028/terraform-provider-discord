@@ -2,9 +2,50 @@ package discord
 
 import (
 	"context"
+	"sort"
 
 	"github.com/bwmarrin/discordgo"
 )
+
+// siblingPosition returns the index of `channel` among its same-parent
+// siblings when sorted by Discord's stored position. Discord's
+// `Channel.position` is a guild-wide flat counter, while HCL typically
+// expresses positions relative to siblings within a category (0, 1, 2, ...).
+// Returning the sibling index keeps Terraform state in sync with how users
+// write channel positions.
+//
+// Categories themselves are sorted guild-wide and should not be passed here.
+func siblingPosition(ctx context.Context, client *discordgo.Session, channel *discordgo.Channel) (int, error) {
+	all, err := client.GuildChannels(channel.GuildID, discordgo.WithContext(ctx))
+	if err != nil {
+		return 0, err
+	}
+	siblings := make([]*discordgo.Channel, 0)
+	for _, c := range all {
+		if c.Type == discordgo.ChannelTypeGuildCategory {
+			continue
+		}
+		if c.ParentID != channel.ParentID {
+			continue
+		}
+		siblings = append(siblings, c)
+	}
+	sort.SliceStable(siblings, func(i, j int) bool {
+		if siblings[i].Position != siblings[j].Position {
+			return siblings[i].Position < siblings[j].Position
+		}
+		// Tie-break on ID for stable ordering when Discord stores equal positions.
+		return siblings[i].ID < siblings[j].ID
+	})
+	for i, c := range siblings {
+		if c.ID == channel.ID {
+			return i, nil
+		}
+	}
+	// Channel wasn't found among its declared siblings — fall back to the
+	// guild-wide value to avoid masking the inconsistency.
+	return channel.Position, nil
+}
 
 func getTextChannelType(channelType discordgo.ChannelType) (string, bool) {
 	switch channelType {

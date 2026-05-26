@@ -235,7 +235,20 @@ func resourceChannelRead(ctx context.Context, d *schema.ResourceData, m interfac
 	d.Set("server_id", channel.GuildID)
 	d.Set("type", channelType)
 	d.Set("name", channel.Name)
-	d.Set("position", channel.Position)
+
+	// Discord stores positions as a guild-wide flat counter, but practitioners
+	// configure positions per-category (0-indexed within siblings). Translate
+	// here so state matches what users typically write in HCL.
+	if channelType == "category" {
+		// Categories are top-level; their position is meaningful guild-wide.
+		d.Set("position", channel.Position)
+	} else {
+		localPos, err := siblingPosition(ctx, client, channel)
+		if err != nil {
+			return diag.Errorf("Failed to compute sibling-relative position for %s: %s", channel.ID, err.Error())
+		}
+		d.Set("position", localPos)
+	}
 
 	switch channelType {
 	case "text", "news":
