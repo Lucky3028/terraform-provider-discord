@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -295,12 +294,12 @@ func resourceAutoModRuleDelete(ctx context.Context, d *schema.ResourceData, m in
 }
 
 func resourceAutoModRuleImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
-	parts := strings.SplitN(d.Id(), ":", 2)
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return nil, fmt.Errorf("import id must be in the form <server_id>:<rule_id>, got %q", d.Id())
+	serverID, ruleID, err := parseTwoIds(d.Id())
+	if err != nil {
+		return nil, err
 	}
-	d.Set("server_id", parts[0])
-	d.SetId(parts[1])
+	d.Set("server_id", serverID)
+	d.SetId(ruleID)
 	return []*schema.ResourceData{d}, nil
 }
 
