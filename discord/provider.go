@@ -38,6 +38,7 @@ func Provider(version string) func() *schema.Provider {
 				"discord_voice_channel":             resourceDiscordVoiceChannel(),
 				"discord_news_channel":              resourceDiscordNewsChannel(),
 				"discord_channel_permission":        resourceDiscordChannelPermission(),
+				"discord_channel_order":             resourceDiscordChannelOrder(),
 				"discord_invite":                    resourceDiscordInvite(),
 				"discord_role":                      resourceDiscordRole(),
 				"discord_role_everyone":             resourceDiscordRoleEveryone(),
