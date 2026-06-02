@@ -1,8 +1,8 @@
 package discord
 
 import (
-	"fmt"
-
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -89,10 +89,10 @@ func resourceDiscordForumChannel() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Description: "Default order to sort posts in the forum. `0` = recent activity (Discord default), `1` = creation date.",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errors []error) {
-					v := val.(int)
+				ValidateDiagFunc: func(i interface{}, path cty.Path) (diags diag.Diagnostics) {
+					v := i.(int)
 					if v < 0 || v > 1 {
-						errors = append(errors, fmt.Errorf("%s must be 0 (latest activity) or 1 (creation date), got: %d", key, v))
+						diags = append(diags, diag.Errorf("default_sort_order must be 0 (latest activity) or 1 (creation date), got: %d", v)...)
 					}
 					return
 				},
@@ -100,12 +100,11 @@ func resourceDiscordForumChannel() *schema.Resource {
 			"default_forum_layout": {
 				Type:        schema.TypeInt,
 				Optional:    true,
-				Default:     0,
 				Description: "Default layout for the forum. `0` = not set, `1` = list view, `2` = gallery view.",
-				ValidateFunc: func(val interface{}, key string) (warns []string, errors []error) {
-					v := val.(int)
+				ValidateDiagFunc: func(i interface{}, path cty.Path) (diags diag.Diagnostics) {
+					v := i.(int)
 					if v < 0 || v > 2 {
-						errors = append(errors, fmt.Errorf("%s must be 0 (not set), 1 (list view), or 2 (gallery view), got: %d", key, v))
+						diags = append(diags, diag.Errorf("default_forum_layout must be 0 (not set), 1 (list view), or 2 (gallery view), got: %d", v)...)
 					}
 					return
 				},
