@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -54,7 +55,10 @@ type channelOrderPatch struct {
 func resourceChannelOrderUpsert(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Context).Session
 	serverID := d.Get("server_id").(string)
-	channelIDs := expandChannelOrderIDs(d.Get("channel_ids").([]interface{}))
+	channelIDs, err := expandChannelOrderIDs(d.Get("channel_ids").([]interface{}))
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	payload := make([]channelOrderPatch, 0, len(channelIDs))
 	for i, id := range channelIDs {
@@ -96,6 +100,7 @@ func resourceChannelOrderRead(ctx context.Context, d *schema.ResourceData, m int
 	}
 
 	siblings := make([]*discordgo.Channel, 0, len(managed))
+	seen := make(map[string]struct{}, len(managed))
 	for _, c := range channels {
 		if _, ok := managed[c.ID]; !ok {
 			continue
@@ -107,7 +112,18 @@ func resourceChannelOrderRead(ctx context.Context, d *schema.ResourceData, m int
 		} else if c.ParentID != categoryID {
 			continue
 		}
+		seen[c.ID] = struct{}{}
 		siblings = append(siblings, c)
+	}
+
+	for id := range managed {
+		if _, ok := seen[id]; !ok {
+			tflog.Warn(ctx, "Managed channel not found in guild; it may have been deleted or moved out of scope. The next plan will show a diff.", map[string]interface{}{
+				"channel_id":  id,
+				"server_id":   serverID,
+				"category_id": categoryID,
+			})
+		}
 	}
 
 	sort.SliceStable(siblings, func(i, j int) bool {
@@ -145,7 +161,9 @@ func resourceChannelOrderImport(_ context.Context, d *schema.ResourceData, _ int
 		return nil, err
 	}
 	d.Set("server_id", serverID)
-	if categoryID != "" {
+	if categoryID == "" {
+		d.Set("category_id", nil)
+	} else {
 		d.Set("category_id", categoryID)
 	}
 	return []*schema.ResourceData{d}, nil
@@ -163,12 +181,14 @@ func parseChannelOrderID(id string) (string, string, error) {
 	return parts[0], parts[1], nil
 }
 
-func expandChannelOrderIDs(raw []interface{}) []string {
+func expandChannelOrderIDs(raw []interface{}) ([]string, error) {
 	out := make([]string, 0, len(raw))
-	for _, v := range raw {
-		if s, ok := v.(string); ok && s != "" {
-			out = append(out, s)
+	for i, v := range raw {
+		s, ok := v.(string)
+		if !ok || s == "" {
+			return nil, fmt.Errorf("channel_ids[%d] is empty; each entry must be a non-empty channel ID", i)
 		}
+		out = append(out, s)
 	}
-	return out
+	return out, nil
 }
