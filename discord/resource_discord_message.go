@@ -294,8 +294,8 @@ func resourceDiscordMessage() *schema.Resource {
 				Type:         schema.TypeList,
 				Optional:     true,
 				ForceNew:     true,
-				MaxItems:     10,
-				Description:  "A local file to attach to the message. Up to 10 file blocks are supported (Discord's per-message attachment limit). Any change to a `file` block recreates the message — Discord does not allow editing existing attachments in place.",
+				MaxItems:     messageMaxAttachments,
+				Description:  fmt.Sprintf("A local file to attach to the message. Up to %d file blocks are supported (Discord's per-message attachment limit). Any change to a `file` block recreates the message — Discord does not allow editing existing attachments in place.", messageMaxAttachments),
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"source": {
@@ -510,11 +510,17 @@ func resourceMessageDelete(ctx context.Context, d *schema.ResourceData, m interf
 	}
 }
 
+// messageMaxAttachments is Discord's hard cap on file attachments per message.
+const messageMaxAttachments = 10
+
 // buildMessageFiles opens each configured `file` block for upload. The returned
 // closers must be closed by the caller after the request has been sent.
 func buildMessageFiles(blocks []interface{}) ([]*discordgo.File, []*os.File, error) {
 	if len(blocks) == 0 {
 		return nil, nil, nil
+	}
+	if len(blocks) > messageMaxAttachments {
+		return nil, nil, fmt.Errorf("a message may have at most %d file attachments, got %d", messageMaxAttachments, len(blocks))
 	}
 	files := make([]*discordgo.File, 0, len(blocks))
 	closers := make([]*os.File, 0, len(blocks))
