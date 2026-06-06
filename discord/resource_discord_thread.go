@@ -1,13 +1,13 @@
 package discord
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"golang.org/x/net/context"
 )
 
 func resourceDiscordThread() *schema.Resource {
