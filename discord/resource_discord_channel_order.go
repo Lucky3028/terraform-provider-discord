@@ -148,7 +148,9 @@ func resourceChannelOrderImport(_ context.Context, d *schema.ResourceData, _ int
 		return nil, err
 	}
 	d.Set("server_id", serverID)
-	if categoryID != "" {
+	if categoryID == "" {
+		d.Set("category_id", nil)
+	} else {
 		d.Set("category_id", categoryID)
 	}
 	return []*schema.ResourceData{d}, nil
