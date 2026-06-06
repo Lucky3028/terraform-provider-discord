@@ -122,10 +122,10 @@ type forumThreadMessage struct {
 }
 
 type threadPatch struct {
-	Name                *string  `json:"name,omitempty"`
-	AutoArchiveDuration *int     `json:"auto_archive_duration,omitempty"`
-	RateLimitPerUser    *int     `json:"rate_limit_per_user,omitempty"`
-	AppliedTags         []string `json:"applied_tags,omitempty"`
+	Name                *string   `json:"name,omitempty"`
+	AutoArchiveDuration *int      `json:"auto_archive_duration,omitempty"`
+	RateLimitPerUser    *int      `json:"rate_limit_per_user,omitempty"`
+	AppliedTags         *[]string `json:"applied_tags,omitempty"`
 }
 
 type threadReadResponse struct {
@@ -242,7 +242,11 @@ func resourceThreadUpdate(ctx context.Context, d *schema.ResourceData, m interfa
 		patch.RateLimitPerUser = &v
 	}
 	if d.HasChange("applied_tags") {
-		patch.AppliedTags = expandStringSet(d.Get("applied_tags"))
+		tags := expandStringSet(d.Get("applied_tags"))
+		if tags == nil {
+			tags = []string{}
+		}
+		patch.AppliedTags = &tags
 	}
 
 	endpoint := discordgo.EndpointChannel(d.Id())
