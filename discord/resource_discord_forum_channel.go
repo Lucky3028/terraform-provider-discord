@@ -100,7 +100,6 @@ func resourceDiscordForumChannel() *schema.Resource {
 			"default_forum_layout": {
 				Type:        schema.TypeInt,
 				Optional:    true,
-				Default:     0,
 				Description: "Default layout for the forum. `0` = not set, `1` = list view, `2` = gallery view.",
 				ValidateDiagFunc: func(i interface{}, path cty.Path) (diags diag.Diagnostics) {
 					v := i.(int)
