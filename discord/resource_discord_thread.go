@@ -55,7 +55,6 @@ func resourceDiscordThread() *schema.Resource {
 						"content": {
 							Type:        schema.TypeString,
 							Required:    true,
-							ForceNew:    true,
 							Description: "Text content of the first message.",
 						},
 					},
