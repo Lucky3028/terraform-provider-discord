@@ -3,6 +3,7 @@ package discord
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -42,7 +43,7 @@ type channelReadResponse struct {
 	DefaultForumLayout   *int               `json:"default_forum_layout"`
 }
 
-func buildForumChannelPatch(d *schema.ResourceData, includeUnset bool) (forumChannelPatch, bool) {
+func buildForumChannelPatch(d *schema.ResourceData, includeUnset bool) (forumChannelPatch, bool, error) {
 	patch := forumChannelPatch{}
 	hasAny := false
 
@@ -59,7 +60,11 @@ func buildForumChannelPatch(d *schema.ResourceData, includeUnset bool) (forumCha
 	if v, ok := d.GetOk("default_reaction_emoji"); ok {
 		blocks := v.([]interface{})
 		if len(blocks) > 0 {
-			patch.DefaultReactionEmoji = expandForumDefaultEmoji(blocks[0].(map[string]interface{}))
+			emoji := expandForumDefaultEmoji(blocks[0].(map[string]interface{}))
+			if emoji.EmojiID == nil && emoji.EmojiName == nil {
+				return patch, false, fmt.Errorf("default_reaction_emoji requires either emoji_id or emoji_name to be set")
+			}
+			patch.DefaultReactionEmoji = emoji
 			hasAny = true
 		}
 	} else if includeUnset && d.HasChange("default_reaction_emoji") {
@@ -79,7 +84,7 @@ func buildForumChannelPatch(d *schema.ResourceData, includeUnset bool) (forumCha
 		hasAny = true
 	}
 
-	return patch, hasAny
+	return patch, hasAny, nil
 }
 
 func expandForumTags(blocks []interface{}) []forumTag {
@@ -154,12 +159,15 @@ func flattenForumDefaultEmoji(e *forumDefaultEmoji) []interface{} {
 // applyForumChannelPatch PATCHes the channel with forum-specific fields. Only
 // fields that have user-configured values (or were just cleared) are sent.
 func applyForumChannelPatch(ctx context.Context, client *discordgo.Session, channelID string, d *schema.ResourceData, includeUnset bool) error {
-	patch, hasAny := buildForumChannelPatch(d, includeUnset)
+	patch, hasAny, err := buildForumChannelPatch(d, includeUnset)
+	if err != nil {
+		return err
+	}
 	if !hasAny {
 		return nil
 	}
 	endpoint := discordgo.EndpointChannel(channelID)
-	_, err := client.RequestWithBucketID("PATCH", endpoint, patch, endpoint, discordgo.WithContext(ctx))
+	_, err = client.RequestWithBucketID("PATCH", endpoint, patch, endpoint, discordgo.WithContext(ctx))
 	return err
 }
 
