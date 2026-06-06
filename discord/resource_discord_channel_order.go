@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -99,6 +100,7 @@ func resourceChannelOrderRead(ctx context.Context, d *schema.ResourceData, m int
 	}
 
 	siblings := make([]*discordgo.Channel, 0, len(managed))
+	seen := make(map[string]struct{}, len(managed))
 	for _, c := range channels {
 		if _, ok := managed[c.ID]; !ok {
 			continue
@@ -110,7 +112,18 @@ func resourceChannelOrderRead(ctx context.Context, d *schema.ResourceData, m int
 		} else if c.ParentID != categoryID {
 			continue
 		}
+		seen[c.ID] = struct{}{}
 		siblings = append(siblings, c)
+	}
+
+	for id := range managed {
+		if _, ok := seen[id]; !ok {
+			tflog.Warn(ctx, "Managed channel not found in guild; it may have been deleted or moved out of scope. The next plan will show a diff.", map[string]interface{}{
+				"channel_id":  id,
+				"server_id":   serverID,
+				"category_id": categoryID,
+			})
+		}
 	}
 
 	sort.SliceStable(siblings, func(i, j int) bool {
