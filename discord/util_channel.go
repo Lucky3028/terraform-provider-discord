@@ -2,9 +2,33 @@ package discord
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+// rateLimitPerUserMax is the upper bound Discord enforces on slowmode
+// (`rate_limit_per_user`): 6 hours expressed in seconds.
+const rateLimitPerUserMax = 21600
+
+// rateLimitPerUserSchema returns the slowmode schema used by text, news, and
+// forum channels.
+func rateLimitPerUserSchema() *schema.Schema {
+	return &schema.Schema{
+		Type:        schema.TypeInt,
+		Optional:    true,
+		Default:     0,
+		Description: fmt.Sprintf("Slowmode: minimum number of seconds a user has to wait between sending messages. `0` disables slowmode. Discord caps the value at `%d` (6 hours).", rateLimitPerUserMax),
+		ValidateFunc: func(val interface{}, key string) (warns []string, errors []error) {
+			v := val.(int)
+			if v < 0 || v > rateLimitPerUserMax {
+				errors = append(errors, fmt.Errorf("%s must be between 0 and %d seconds, got: %d", key, rateLimitPerUserMax, v))
+			}
+			return
+		},
+	}
+}
 
 func getTextChannelType(channelType discordgo.ChannelType) (string, bool) {
 	switch channelType {

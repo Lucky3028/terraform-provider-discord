@@ -26,6 +26,7 @@ func resourceDiscordNewsChannel() *schema.Resource {
 				Default:     false,
 				Description: "Whether the channel is NSFW.",
 			},
+			"rate_limit_per_user": rateLimitPerUserSchema(),
 		}),
 	}
 }

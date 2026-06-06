@@ -145,11 +145,12 @@ func resourceChannelCreate(ctx context.Context, d *schema.ResourceData, m interf
 	}
 
 	var (
-		topic     string
-		bitrate   = 64000
-		userlimit int
-		nsfw      bool
-		parentId  string
+		topic            string
+		bitrate          = 64000
+		userlimit        int
+		nsfw             bool
+		parentId         string
+		rateLimitPerUser int
 	)
 
 	switch channelType {
@@ -161,6 +162,11 @@ func resourceChannelCreate(ctx context.Context, d *schema.ResourceData, m interf
 			if v, ok := d.GetOk("nsfw"); ok {
 				nsfw = v.(bool)
 			}
+			rateLimitPerUser = d.Get("rate_limit_per_user").(int)
+		}
+	case "forum":
+		{
+			rateLimitPerUser = d.Get("rate_limit_per_user").(int)
 		}
 	case "voice":
 		{
@@ -181,14 +187,15 @@ func resourceChannelCreate(ctx context.Context, d *schema.ResourceData, m interf
 		}
 	}
 	channel, err := client.GuildChannelCreateComplex(serverId, discordgo.GuildChannelCreateData{
-		Name:      d.Get("name").(string),
-		Type:      channelTypeInt,
-		Topic:     topic,
-		Bitrate:   bitrate,
-		UserLimit: userlimit,
-		Position:  d.Get("position").(int),
-		ParentID:  parentId,
-		NSFW:      nsfw,
+		Name:             d.Get("name").(string),
+		Type:             channelTypeInt,
+		Topic:            topic,
+		Bitrate:           bitrate,
+		UserLimit:        userlimit,
+		Position:         d.Get("position").(int),
+		ParentID:         parentId,
+		NSFW:             nsfw,
+		RateLimitPerUser: rateLimitPerUser,
 	}, discordgo.WithContext(ctx))
 
 	if err != nil {
@@ -242,6 +249,11 @@ func resourceChannelRead(ctx context.Context, d *schema.ResourceData, m interfac
 		{
 			d.Set("topic", channel.Topic)
 			d.Set("nsfw", channel.NSFW)
+			d.Set("rate_limit_per_user", channel.RateLimitPerUser)
+		}
+	case "forum":
+		{
+			d.Set("rate_limit_per_user", channel.RateLimitPerUser)
 		}
 	case "voice":
 		{
@@ -284,13 +296,14 @@ func resourceChannelUpdate(ctx context.Context, d *schema.ResourceData, m interf
 	channelType := d.Get("type").(string)
 
 	var (
-		name      string
-		position  int
-		topic     string
-		nsfw      bool
-		bitRate   = 64000
-		userLimit int
-		parentId  string
+		name             string
+		position         int
+		topic            string
+		nsfw             bool
+		bitRate          = 64000
+		userLimit        int
+		parentId         string
+		rateLimitPerUser int
 	)
 
 	name = map[bool]string{true: d.Get("name").(string), false: channel.Name}[d.HasChange("name")]
@@ -301,6 +314,11 @@ func resourceChannelUpdate(ctx context.Context, d *schema.ResourceData, m interf
 		{
 			topic = map[bool]string{true: d.Get("topic").(string), false: channel.Topic}[d.HasChange("topic")]
 			nsfw = map[bool]bool{true: d.Get("nsfw").(bool), false: channel.NSFW}[d.HasChange("nsfw")]
+			rateLimitPerUser = map[bool]int{true: d.Get("rate_limit_per_user").(int), false: channel.RateLimitPerUser}[d.HasChange("rate_limit_per_user")]
+		}
+	case "forum":
+		{
+			rateLimitPerUser = map[bool]int{true: d.Get("rate_limit_per_user").(int), false: channel.RateLimitPerUser}[d.HasChange("rate_limit_per_user")]
 		}
 	case "voice":
 		{
@@ -314,13 +332,14 @@ func resourceChannelUpdate(ctx context.Context, d *schema.ResourceData, m interf
 		parentId = map[bool]string{true: id, false: ""}[d.Get("category").(string) != ""]
 	}
 	channel, err := client.ChannelEditComplex(d.Id(), &discordgo.ChannelEdit{
-		Name:      name,
-		Position:  &position,
-		Topic:     topic,
-		NSFW:      &nsfw,
-		Bitrate:   bitRate,
-		UserLimit: userLimit,
-		ParentID:  parentId,
+		Name:             name,
+		Position:         &position,
+		Topic:            topic,
+		NSFW:             &nsfw,
+		Bitrate:          bitRate,
+		UserLimit:        userLimit,
+		ParentID:         parentId,
+		RateLimitPerUser: &rateLimitPerUser,
 	}, discordgo.WithContext(ctx))
 	if err != nil {
 		return diag.Errorf("Failed to update channel %s: %s", d.Id(), err.Error())
