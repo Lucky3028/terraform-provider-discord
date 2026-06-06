@@ -73,7 +73,7 @@ func buildForumChannelPatch(d *schema.ResourceData, includeUnset bool) (forumCha
 		hasAny = true
 	}
 
-	if v, ok := d.GetOkExists("default_forum_layout"); ok {
+	if v, ok := d.GetOk("default_forum_layout"); ok {
 		layout := v.(int)
 		patch.DefaultForumLayout = &layout
 		hasAny = true
