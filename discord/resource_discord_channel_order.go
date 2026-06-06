@@ -54,7 +54,10 @@ type channelOrderPatch struct {
 func resourceChannelOrderUpsert(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Context).Session
 	serverID := d.Get("server_id").(string)
-	channelIDs := expandChannelOrderIDs(d.Get("channel_ids").([]interface{}))
+	channelIDs, err := expandChannelOrderIDs(d.Get("channel_ids").([]interface{}))
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	payload := make([]channelOrderPatch, 0, len(channelIDs))
 	for i, id := range channelIDs {
@@ -163,12 +166,14 @@ func parseChannelOrderID(id string) (string, string, error) {
 	return parts[0], parts[1], nil
 }
 
-func expandChannelOrderIDs(raw []interface{}) []string {
+func expandChannelOrderIDs(raw []interface{}) ([]string, error) {
 	out := make([]string, 0, len(raw))
-	for _, v := range raw {
-		if s, ok := v.(string); ok && s != "" {
-			out = append(out, s)
+	for i, v := range raw {
+		s, ok := v.(string)
+		if !ok || s == "" {
+			return nil, fmt.Errorf("channel_ids[%d] is empty; each entry must be a non-empty channel ID", i)
 		}
+		out = append(out, s)
 	}
-	return out
+	return out, nil
 }
