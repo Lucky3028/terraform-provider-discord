@@ -47,6 +47,7 @@ func Provider(version string) func() *schema.Provider {
 				"discord_message":                   resourceDiscordMessage(),
 				"discord_guild_sticker":             resourceDiscordGuildSticker(),
 				"discord_system_channel":            resourceDiscordSystemChannel(),
+				"discord_rules_channel":             resourceDiscordRulesChannel(),
 				"discord_webhook":                   resourceDiscordWebhook(),
 				"discord_server_onboarding":         resourceDiscordServerOnboarding(),
 				"discord_server_widget":             resourceDiscordServerWidget(),
