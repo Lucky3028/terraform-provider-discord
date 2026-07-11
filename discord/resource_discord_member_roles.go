@@ -23,12 +23,20 @@ func convertToRoleSchema(v interface{}) (*RoleSchema, error) {
 	return roleSchema, err
 }
 
+func roleSchemaToMap(r *RoleSchema) map[string]interface{} {
+	return map[string]interface{}{
+		"role_id":  r.RoleId,
+		"has_role": r.HasRole,
+	}
+}
+
 func resourceDiscordMemberRoles() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceMemberRolesCreate,
 		ReadContext:   resourceMemberRolesRead,
 		UpdateContext: resourceMemberRolesUpdate,
 		DeleteContext: resourceMemberRolesDelete,
+		CustomizeDiff: resourceMemberRolesCustomizeDiff,
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
@@ -64,8 +72,12 @@ func resourceDiscordMemberRoles() *schema.Resource {
 							Default:     true,
 							Description: "Whether the user should have the role. (default `true`)",
 						},
-					},
-				},
+			"last_updated": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+		},
+	},
 			},
 		},
 	}
@@ -123,7 +135,13 @@ func resourceMemberRolesRead(ctx context.Context, d *schema.ResourceData, m inte
 			roles = append(roles, &RoleSchema{RoleId: v.RoleId, HasRole: false})
 		}
 	}
-	d.Set("role", roles)
+	roleMaps := make([]interface{}, len(roles))
+	for i, r := range roles {
+		roleMaps[i] = roleSchemaToMap(r)
+	}
+	if err := d.Set("role", roleMaps); err != nil {
+		return diag.Errorf("Failed to set role state: %s", err.Error())
+	}
 
 	return diags
 }
@@ -221,4 +239,30 @@ func resourceMemberRolesDelete(ctx context.Context, d *schema.ResourceData, m in
 	}
 
 	return diags
+}
+
+func resourceMemberRolesCustomizeDiff(ctx context.Context, d *schema.ResourceDiff, m interface{}) error {
+	client := m.(*Context).Session
+
+	serverId := d.Get("server_id").(string)
+	userId := d.Get("user_id").(string)
+
+	member, err := client.GuildMember(serverId, userId, discordgo.WithContext(ctx))
+	if err != nil {
+		// Member not in guild — can't verify. Let normal plan proceed.
+		return nil
+	}
+
+	configRoles := d.Get("role").(*schema.Set).List()
+	for _, r := range configRoles {
+		v, _ := convertToRoleSchema(r)
+		inConfig := v.HasRole
+		inDiscord := hasRole(member, v.RoleId)
+		if inConfig != inDiscord {
+			// Force an update so UpdateContext reconciles the roles
+			return d.ForceNew("role")
+		}
+	}
+
+	return nil
 }
