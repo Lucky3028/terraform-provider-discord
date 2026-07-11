@@ -30,7 +30,7 @@ func resourceDiscordMemberRoles() *schema.Resource {
 		UpdateContext: resourceMemberRolesUpdate,
 		DeleteContext: resourceMemberRolesDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: resourceMemberRolesImport,
 		},
 
 		Description: "A resource to manage member roles for a server.",
@@ -69,6 +69,18 @@ func resourceDiscordMemberRoles() *schema.Resource {
 			},
 		},
 	}
+}
+
+func resourceMemberRolesImport(ctx context.Context, data *schema.ResourceData, i interface{}) ([]*schema.ResourceData, error) {
+	serverId, userId, err := parseTwoIds(data.Id())
+	if err != nil {
+		return nil, err
+	}
+
+	data.Set("server_id", serverId)
+	data.Set("user_id", userId)
+
+	return schema.ImportStatePassthroughContext(ctx, data, i)
 }
 
 func resourceMemberRolesCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
