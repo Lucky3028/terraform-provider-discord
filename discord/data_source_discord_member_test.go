@@ -5,8 +5,36 @@ import (
 	"os"
 	"testing"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
+
+func TestFindMemberByUsername(t *testing.T) {
+	legacy := &discordgo.Member{User: &discordgo.User{Username: "alice", Discriminator: "1234"}}
+	migrated := &discordgo.Member{User: &discordgo.User{Username: "bob", Discriminator: "0"}}
+	members := []*discordgo.Member{legacy, migrated}
+
+	tests := []struct {
+		name          string
+		username      string
+		discriminator string
+		want          *discordgo.Member
+	}{
+		{"migrated account, discriminator omitted", "bob", "", migrated},
+		{"migrated account, discriminator \"0\"", "bob", "0", migrated},
+		{"legacy account, matching discriminator", "alice", "1234", legacy},
+		{"legacy account, discriminator omitted", "alice", "", legacy},
+		{"legacy account, wrong discriminator", "alice", "9999", nil},
+		{"unknown username", "carol", "", nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := findMemberByUsername(members, tt.username, tt.discriminator); got != tt.want {
+				t.Errorf("findMemberByUsername(%q, %q) = %v, want %v", tt.username, tt.discriminator, got, tt.want)
+			}
+		})
+	}
+}
 
 func TestAccDatasourceDiscordMember(t *testing.T) {
 	testServerID := os.Getenv("DISCORD_TEST_SERVER_ID")
