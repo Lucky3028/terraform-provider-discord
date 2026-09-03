@@ -45,6 +45,7 @@ func Provider(version string) func() *schema.Provider {
 				"discord_member_roles":              resourceDiscordMemberRoles(),
 				"discord_role_connection_metadata":  resourceDiscordRoleConnectionMetadata(),
 				"discord_message":                   resourceDiscordMessage(),
+				"discord_thread":                    resourceDiscordThread(),
 				"discord_guild_sticker":             resourceDiscordGuildSticker(),
 				"discord_system_channel":            resourceDiscordSystemChannel(),
 				"discord_webhook":                   resourceDiscordWebhook(),
