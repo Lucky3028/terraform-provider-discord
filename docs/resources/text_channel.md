@@ -40,7 +40,7 @@ resource "discord_text_channel" "announcements" {
 
 - `category` (String) ID of category to place this channel in.
 - `nsfw` (Boolean) Whether the channel is NSFW.
-- `position` (Number) Position of the channel, `0`-indexed.
+- `position` (Number, Deprecated) Position of the channel, `0`-indexed. **Deprecated** — Discord normalises channel positions per-type within each category, which makes per-channel position values diverge from what you set in HCL and produces permanent state drift. Use `discord_channel_order` instead to manage ordering atomically via Discord's bulk reorder endpoint.
 - `rate_limit_per_user` (Number) Slowmode: minimum number of seconds a user has to wait between sending messages. `0` disables slowmode. Discord caps the value at `21600` (6 hours).
 - `sync_perms_with_category` (Boolean) Whether channel permissions should be synced with the category this channel is in.
 - `topic` (String) Topic of the channel.

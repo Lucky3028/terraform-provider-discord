@@ -50,10 +50,13 @@ func getChannelSchema(channelType string, s map[string]*schema.Schema) map[strin
 			Description: "Name of the channel.",
 		},
 		"position": {
-			Type:        schema.TypeInt,
-			Default:     1,
-			Optional:    true,
-			Description: "Position of the channel, `0`-indexed.",
+			Type:     schema.TypeInt,
+			Default:  1,
+			Optional: true,
+			Description: "Position of the channel, `0`-indexed. " +
+				"**Deprecated** — Discord normalises channel positions per-type within each category, which makes per-channel position values diverge from what you set in HCL and produces permanent state drift. " +
+				"Use `discord_channel_order` instead to manage ordering atomically via Discord's bulk reorder endpoint.",
+			Deprecated: "Use the discord_channel_order resource to manage channel ordering atomically. The per-channel position field cannot produce a stable plan on guilds with many channels.",
 			ValidateFunc: func(val interface{}, key string) (warns []string, errors []error) {
 				v := val.(int)
 
@@ -129,6 +132,119 @@ func validateChannel(d *schema.ResourceData) (bool, error) {
 	return true, nil
 }
 
+// buildChannelCreateData maps the resource config onto Discord's channel-create
+// payload. It is kept apart from resourceChannelCreate so the per-type field
+// selection can be tested without a guild to create channels in: the only
+// coverage it had was an acceptance test, skipped unless DISCORD_TEST_SERVER_ID
+// is set, so a field missing from a branch here went unnoticed in CI.
+func buildChannelCreateData(d *schema.ResourceData, channelTypeInt discordgo.ChannelType) discordgo.GuildChannelCreateData {
+	channelType := d.Get("type").(string)
+
+	var (
+		topic            string
+		bitrate          = 64000
+		userlimit        int
+		nsfw             bool
+		parentId         string
+		rateLimitPerUser int
+	)
+
+	switch channelType {
+	// Forums belong here, not in a branch of their own: Discord's forum channel
+	// carries a topic — shown as the forum's post guidelines — plus an nsfw flag
+	// and slowmode, exactly as text and news channels do.
+	case "text", "news", "forum":
+		{
+			if v, ok := d.GetOk("topic"); ok {
+				topic = v.(string)
+			}
+			if v, ok := d.GetOk("nsfw"); ok {
+				nsfw = v.(bool)
+			}
+			rateLimitPerUser = d.Get("rate_limit_per_user").(int)
+		}
+	case "voice":
+		{
+			if v, ok := d.GetOk("bitrate"); ok {
+				bitrate = v.(int)
+			}
+			if v, ok := d.GetOk("user_limit"); ok {
+				userlimit = v.(int)
+			}
+		}
+	}
+
+	if channelType != "category" {
+		if v, ok := d.GetOk("category"); ok {
+			parentId = v.(string)
+		}
+	}
+
+	return discordgo.GuildChannelCreateData{
+		Name:             d.Get("name").(string),
+		Type:             channelTypeInt,
+		Topic:            topic,
+		Bitrate:          bitrate,
+		UserLimit:        userlimit,
+		Position:         d.Get("position").(int),
+		ParentID:         parentId,
+		NSFW:             nsfw,
+		RateLimitPerUser: rateLimitPerUser,
+	}
+}
+
+// buildChannelEdit maps the resource config onto Discord's channel-edit payload,
+// falling back to the channel's current values for whatever the plan left
+// unchanged. Split out for the same reason as buildChannelCreateData.
+func buildChannelEdit(d *schema.ResourceData, current *discordgo.Channel) *discordgo.ChannelEdit {
+	channelType := d.Get("type").(string)
+
+	var (
+		name             string
+		position         int
+		topic            string
+		nsfw             bool
+		bitRate          = 64000
+		userLimit        int
+		parentId         string
+		rateLimitPerUser int
+	)
+
+	name = map[bool]string{true: d.Get("name").(string), false: current.Name}[d.HasChange("name")]
+	position = map[bool]int{true: d.Get("position").(int), false: current.Position}[d.HasChange("position")]
+
+	switch channelType {
+	// See buildChannelCreateData for why forums share this branch.
+	case "text", "news", "forum":
+		{
+			topic = map[bool]string{true: d.Get("topic").(string), false: current.Topic}[d.HasChange("topic")]
+			nsfw = map[bool]bool{true: d.Get("nsfw").(bool), false: current.NSFW}[d.HasChange("nsfw")]
+			rateLimitPerUser = map[bool]int{true: d.Get("rate_limit_per_user").(int), false: current.RateLimitPerUser}[d.HasChange("rate_limit_per_user")]
+		}
+	case "voice":
+		{
+			bitRate = map[bool]int{true: d.Get("bitrate").(int), false: current.Bitrate}[d.HasChange("bitrate")]
+			userLimit = map[bool]int{true: d.Get("user_limit").(int), false: current.UserLimit}[d.HasChange("user_limit")]
+		}
+	}
+
+	if channelType != "category" && d.HasChange("category") {
+		id := d.Get("category").(string)
+		parentId = map[bool]string{true: id, false: ""}[d.Get("category").(string) != ""]
+	}
+
+	return &discordgo.ChannelEdit{
+		Name:             name,
+		Position:         &position,
+		Topic:            topic,
+		NSFW:             &nsfw,
+		Bitrate:          bitRate,
+		UserLimit:        userLimit,
+		ParentID:         parentId,
+		RateLimitPerUser: &rateLimitPerUser,
+	}
+}
+
 func resourceChannelCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	client := m.(*Context).Session
@@ -144,59 +260,13 @@ func resourceChannelCreate(ctx context.Context, d *schema.ResourceData, m interf
 		return diag.Errorf("Invalid channel type: %s", channelType)
 	}
 
-	var (
-		topic            string
-		bitrate          = 64000
-		userlimit        int
-		nsfw             bool
-		parentId         string
-		rateLimitPerUser int
-	)
-
-	switch channelType {
-	case "text", "news":
-		{
-			if v, ok := d.GetOk("topic"); ok {
-				topic = v.(string)
-			}
-			if v, ok := d.GetOk("nsfw"); ok {
-				nsfw = v.(bool)
-			}
-			rateLimitPerUser = d.Get("rate_limit_per_user").(int)
-		}
-	case "forum":
-		{
-			rateLimitPerUser = d.Get("rate_limit_per_user").(int)
-		}
-	case "voice":
-		{
-			if v, ok := d.GetOk("bitrate"); ok {
-				bitrate = v.(int)
-			}
-			if v, ok := d.GetOk("user_limit"); ok {
-				userlimit = v.(int)
-			}
-		}
-	}
-
 	isCategoryCh := channelType == "category"
 
-	if !isCategoryCh {
-		if v, ok := d.GetOk("category"); ok {
-			parentId = v.(string)
-		}
-	}
-	channel, err := client.GuildChannelCreateComplex(serverId, discordgo.GuildChannelCreateData{
-		Name:             d.Get("name").(string),
-		Type:             channelTypeInt,
-		Topic:            topic,
-		Bitrate:           bitrate,
-		UserLimit:        userlimit,
-		Position:         d.Get("position").(int),
-		ParentID:         parentId,
-		NSFW:             nsfw,
-		RateLimitPerUser: rateLimitPerUser,
-	}, discordgo.WithContext(ctx))
+	channel, err := client.GuildChannelCreateComplex(
+		serverId,
+		buildChannelCreateData(d, channelTypeInt),
+		discordgo.WithContext(ctx),
+	)
 
 	if err != nil {
 		return diag.Errorf("Failed to create channel: %s", err.Error())
@@ -205,6 +275,12 @@ func resourceChannelCreate(ctx context.Context, d *schema.ResourceData, m interf
 	d.SetId(channel.ID)
 	d.Set("server_id", serverId)
 	d.Set("channel_id", channel.ID)
+
+	if channelType == "forum" {
+		if err := applyForumChannelPatch(ctx, client, channel.ID, d, false); err != nil {
+			return append(diags, diag.Errorf("Failed to apply forum channel config to %s: %s", channel.ID, err.Error())...)
+		}
+	}
 
 	if !isCategoryCh {
 		if v, ok := d.GetOk("sync_perms_with_category"); ok && v.(bool) {
@@ -253,7 +329,12 @@ func resourceChannelRead(ctx context.Context, d *schema.ResourceData, m interfac
 		}
 	case "forum":
 		{
+			d.Set("topic", channel.Topic)
+			d.Set("nsfw", channel.NSFW)
 			d.Set("rate_limit_per_user", channel.RateLimitPerUser)
+			if err := readForumChannelFields(ctx, client, channel.ID, d); err != nil {
+				return diag.Errorf("Failed to read forum channel config for %s: %s", channel.ID, err.Error())
+			}
 		}
 	case "voice":
 		{
@@ -295,54 +376,19 @@ func resourceChannelUpdate(ctx context.Context, d *schema.ResourceData, m interf
 	channel, _ := client.Channel(d.Id(), discordgo.WithContext(ctx))
 	channelType := d.Get("type").(string)
 
-	var (
-		name             string
-		position         int
-		topic            string
-		nsfw             bool
-		bitRate          = 64000
-		userLimit        int
-		parentId         string
-		rateLimitPerUser int
+	channel, err := client.ChannelEditComplex(
+		d.Id(),
+		buildChannelEdit(d, channel),
+		discordgo.WithContext(ctx),
 	)
-
-	name = map[bool]string{true: d.Get("name").(string), false: channel.Name}[d.HasChange("name")]
-	position = map[bool]int{true: d.Get("position").(int), false: channel.Position}[d.HasChange("position")]
-
-	switch channelType {
-	case "text", "news":
-		{
-			topic = map[bool]string{true: d.Get("topic").(string), false: channel.Topic}[d.HasChange("topic")]
-			nsfw = map[bool]bool{true: d.Get("nsfw").(bool), false: channel.NSFW}[d.HasChange("nsfw")]
-			rateLimitPerUser = map[bool]int{true: d.Get("rate_limit_per_user").(int), false: channel.RateLimitPerUser}[d.HasChange("rate_limit_per_user")]
-		}
-	case "forum":
-		{
-			rateLimitPerUser = map[bool]int{true: d.Get("rate_limit_per_user").(int), false: channel.RateLimitPerUser}[d.HasChange("rate_limit_per_user")]
-		}
-	case "voice":
-		{
-			bitRate = map[bool]int{true: d.Get("bitrate").(int), false: channel.Bitrate}[d.HasChange("bitrate")]
-			userLimit = map[bool]int{true: d.Get("user_limit").(int), false: channel.UserLimit}[d.HasChange("user_limit")]
-		}
-	}
-
-	if channelType != "category" && d.HasChange("category") {
-		id := d.Get("category").(string)
-		parentId = map[bool]string{true: id, false: ""}[d.Get("category").(string) != ""]
-	}
-	channel, err := client.ChannelEditComplex(d.Id(), &discordgo.ChannelEdit{
-		Name:             name,
-		Position:         &position,
-		Topic:            topic,
-		NSFW:             &nsfw,
-		Bitrate:          bitRate,
-		UserLimit:        userLimit,
-		ParentID:         parentId,
-		RateLimitPerUser: &rateLimitPerUser,
-	}, discordgo.WithContext(ctx))
 	if err != nil {
 		return diag.Errorf("Failed to update channel %s: %s", d.Id(), err.Error())
+	}
+
+	if channelType == "forum" {
+		if err := applyForumChannelPatch(ctx, client, d.Id(), d, true); err != nil {
+			return diag.Errorf("Failed to apply forum channel config to %s: %s", d.Id(), err.Error())
+		}
 	}
 
 	if channelType != "category" {
