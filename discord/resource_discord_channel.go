@@ -100,13 +100,13 @@ func validateChannel(d *schema.ResourceData) (bool, error) {
 				return false, errors.New("nsfw is not allowed on categories")
 			}
 		}
-	case "voice":
+	case "voice", "stage":
 		{
 			if _, ok := d.GetOk("topic"); ok {
-				return false, errors.New("topic is not allowed on voice channels")
+				return false, errors.New("topic is not allowed on voice/stage channels")
 			}
 			if _, ok := d.GetOk("nsfw"); ok {
-				return false, errors.New("nsfw is not allowed on voice channels")
+				return false, errors.New("nsfw is not allowed on voice/stage channels")
 			}
 		}
 	case "text", "news":
@@ -168,7 +168,7 @@ func resourceChannelCreate(ctx context.Context, d *schema.ResourceData, m interf
 		{
 			rateLimitPerUser = d.Get("rate_limit_per_user").(int)
 		}
-	case "voice":
+	case "voice", "stage":
 		{
 			if v, ok := d.GetOk("bitrate"); ok {
 				bitrate = v.(int)
@@ -255,7 +255,7 @@ func resourceChannelRead(ctx context.Context, d *schema.ResourceData, m interfac
 		{
 			d.Set("rate_limit_per_user", channel.RateLimitPerUser)
 		}
-	case "voice":
+	case "voice", "stage":
 		{
 			d.Set("bitrate", channel.Bitrate)
 			d.Set("user_limit", channel.UserLimit)
@@ -320,7 +320,7 @@ func resourceChannelUpdate(ctx context.Context, d *schema.ResourceData, m interf
 		{
 			rateLimitPerUser = map[bool]int{true: d.Get("rate_limit_per_user").(int), false: channel.RateLimitPerUser}[d.HasChange("rate_limit_per_user")]
 		}
-	case "voice":
+	case "voice", "stage":
 		{
 			bitRate = map[bool]int{true: d.Get("bitrate").(int), false: channel.Bitrate}[d.HasChange("bitrate")]
 			userLimit = map[bool]int{true: d.Get("user_limit").(int), false: channel.UserLimit}[d.HasChange("user_limit")]
