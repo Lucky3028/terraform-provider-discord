@@ -93,19 +93,14 @@ func dataSourceMemberRead(ctx context.Context, d *schema.ResourceData, m interfa
 
 	if v, ok := d.GetOk("username"); ok {
 		username := v.(string)
-		members, err := client.GuildMembersSearch(serverId, username, 1, discordgo.WithContext(ctx))
+		members, err := client.GuildMembersSearch(serverId, username, 1000, discordgo.WithContext(ctx))
 		if err != nil {
 			return diag.Errorf("Failed to fetch members for %s: %s", serverId, err.Error())
 		}
 
 		discriminator := d.Get("discriminator").(string)
-		memberErr = fmt.Errorf("failed to find member by name#discriminator: %s#%s", username, discriminator)
-		for _, m := range members {
-			if m.User.Username == username && m.User.Discriminator == discriminator {
-				member = m
-				memberErr = nil
-				break
-			}
+		if member = findMemberByUsername(members, username, discriminator); member == nil {
+			memberErr = fmt.Errorf("failed to find member with username %q in server %s", username, serverId)
 		}
 	}
 	if memberErr != nil {
@@ -140,4 +135,21 @@ func dataSourceMemberRead(ctx context.Context, d *schema.ResourceData, m interfa
 	d.Set("nick", member.Nick)
 
 	return diags
+}
+
+// findMemberByUsername returns the first member whose username matches, or nil
+// if none do. The discriminator is only enforced for un-migrated legacy
+// accounts: migrated accounts report a discriminator of "0", while the optional
+// field defaults to "" — neither should block a username match.
+func findMemberByUsername(members []*discordgo.Member, username, discriminator string) *discordgo.Member {
+	for _, m := range members {
+		if m.User.Username != username {
+			continue
+		}
+		if discriminator != "" && discriminator != "0" && m.User.Discriminator != discriminator {
+			continue
+		}
+		return m
+	}
+	return nil
 }
