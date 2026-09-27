@@ -2,6 +2,8 @@
 
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Lucky3028/terraform-provider-discord?style=for-the-badge)
 
+**Discontinued**
+
 This is a fork of [Chaotic-Logic/terraform-provider-discord](https://github.com/Chaotic-Logic/terraform-provider-discord).
 
 Here's Terraform Registry page of this repository: <https://registry.terraform.io/providers/Lucky3028/discord/latest>
