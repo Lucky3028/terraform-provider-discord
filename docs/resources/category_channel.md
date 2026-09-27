@@ -30,7 +30,7 @@ resource "discord_category_channel" "chatting" {
 
 ### Optional
 
-- `position` (Number) Position of the channel, `0`-indexed.
+- `position` (Number, Deprecated) Position of the channel, `0`-indexed. **Deprecated** — Discord normalises channel positions per-type within each category, which makes per-channel position values diverge from what you set in HCL and produces permanent state drift. Use `discord_channel_order` instead to manage ordering atomically via Discord's bulk reorder endpoint.
 - `type` (String) The type of the channel. This is only for internal use and should never be provided.
 
 ### Read-Only

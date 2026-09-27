@@ -32,7 +32,7 @@ resource "discord_voice_channel" "general" {
 
 - `bitrate` (Number) Bitrate of the channel.
 - `category` (String) ID of category to place this channel in.
-- `position` (Number) Position of the channel, `0`-indexed.
+- `position` (Number, Deprecated) Position of the channel, `0`-indexed. **Deprecated** — Discord normalises channel positions per-type within each category, which makes per-channel position values diverge from what you set in HCL and produces permanent state drift. Use `discord_channel_order` instead to manage ordering atomically via Discord's bulk reorder endpoint.
 - `sync_perms_with_category` (Boolean) Whether channel permissions should be synced with the category this channel is in.
 - `type` (String) The type of the channel. This is only for internal use and should never be provided.
 - `user_limit` (Number) User limit of the channel.
